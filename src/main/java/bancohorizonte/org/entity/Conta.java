@@ -1,6 +1,7 @@
 package bancohorizonte.org.entity;
 
 
+import bancohorizonte.org.exception.SaldoInsuficienteException;
 import jakarta.persistence.*;
 
 
@@ -33,10 +34,10 @@ public class Conta {
 
     public void sacar(Double valor) {
         if (valor <= 0) {
-            throw new IllegalArgumentException("O valor do saque deve ser positivo.");
+            throw new SaldoInsuficienteException();
         }
         if (valor > this.saldo) {
-            throw new IllegalArgumentException("Saldo insuficiente para o saque.");
+            throw new SaldoInsuficienteException();
         }
         this.saldo -= valor;
     }

@@ -28,7 +28,7 @@ public class ContaService {
         Conta novaConta = new Conta();
         novaConta.setAgencia(0001L);
         novaConta.setNumero(Conta.gerarNumeroConta());
-        novaConta.setTipo(TipoConta.valueOf(conta.tipoConta()));
+        novaConta.setTipo(TipoConta.CORRENTE);
         return contaRepository.save(novaConta);
     }
 

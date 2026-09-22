@@ -1,0 +1,321 @@
+{
+  "info": {
+    "_postman_id": "1e20a90f-bc9f-4a6b-8bb5-000100010001",
+    "name": "Desafio Agencia Bancaria - FIAP",
+    "description": "Collection para testar as 6 rotas obrigatorias do projeto Java com Spring Boot, Spring Data JPA e PostgreSQL.\n\nPre-requisito: os tipos de conta devem estar carregados no PostgreSQL. Por padrao, a collection usa tipoContaId=1.\n\nExecute as requisicoes na ordem. Os IDs retornados no cadastro da pessoa e na abertura da conta sao salvos automaticamente nas variaveis pessoaId e contaId.\n\nPara testar a auditoria, consulte a conta, altere temporariamente o valor do saque para 500.00, envie a requisicao e consulte a conta novamente. O saque deve retornar 409 e o saldo deve permanecer inalterado.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1 - Cadastrar pessoa",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const cpf = String(Date.now()).slice(-11).padStart(11, '0');",
+              "pm.collectionVariables.set('cpfTeste', cpf);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201 - pessoa cadastrada', function () { pm.response.to.have.status(201); });",
+              "pm.test('Resposta em JSON', function () { pm.response.to.be.json; });",
+              "if (pm.response.code === 201) {",
+              "  const resposta = pm.response.json();",
+              "  pm.expect(resposta).to.have.property('id');",
+              "  pm.collectionVariables.set('pessoaId', resposta.id);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Camila Ferreira\",\n  \"cpf\": \"{{cpfTeste}}\",\n  \"email\": \"camila.{{cpfTeste}}@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/pessoas",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "pessoas"
+          ]
+        },
+        "description": "Cadastra um titular. O ID retornado e salvo automaticamente em {{pessoaId}}."
+      }
+    },
+    {
+      "name": "2 - Abrir conta",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const seis = String(Date.now()).slice(-6);",
+              "const digito = String(Number(seis) % 10);",
+              "pm.collectionVariables.set('numeroConta', `${seis}-${digito}`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201 - conta aberta', function () { pm.response.to.have.status(201); });",
+              "pm.test('Resposta em JSON', function () { pm.response.to.be.json; });",
+              "if (pm.response.code === 201) {",
+              "  const resposta = pm.response.json();",
+              "  pm.expect(resposta).to.have.property('id');",
+              "  pm.collectionVariables.set('contaId', resposta.id);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"agencia\": \"0001\",\n  \"numero\": \"{{numeroConta}}\",\n  \"saldoInicial\": 250.00,\n  \"ativa\": true,\n  \"titularId\": {{pessoaId}},\n  \"tipoContaId\": {{tipoContaId}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/contas",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "contas"
+          ]
+        },
+        "description": "Abre uma conta usando a pessoa cadastrada e um tipo existente. O ID retornado e salvo em {{contaId}}."
+      }
+    },
+    {
+      "name": "3 - Consultar conta por ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Exibe saldo, titular e tipo', function () {",
+              "  const resposta = pm.response.json();",
+              "  pm.expect(resposta).to.have.property('saldo');",
+              "  pm.expect(resposta).to.have.property('titular');",
+              "  pm.expect(resposta).to.have.property('tipo');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/contas/{{contaId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "contas",
+            "{{contaId}}"
+          ]
+        },
+        "description": "Consulta a conta e comprova no mesmo JSON o saldo e os relacionamentos com titular e tipo. Se seu DTO usar o campo tipoConta em vez de tipo, ajuste o teste."
+      }
+    },
+    {
+      "name": "4 - Listar contas da pessoa",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Retorna uma lista', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/contas/pessoa/{{pessoaId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "contas",
+            "pessoa",
+            "{{pessoaId}}"
+          ]
+        },
+        "description": "Lista somente as contas relacionadas ao titular cadastrado."
+      }
+    },
+    {
+      "name": "5 - Depositar",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200 - deposito realizado', function () { pm.response.to.have.status(200); });",
+              "pm.test('Saldo retornado', function () { pm.expect(pm.response.json()).to.have.property('saldo'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"valor\": 100.00\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/contas/{{contaId}}/depositos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "contas",
+            "{{contaId}}",
+            "depositos"
+          ]
+        },
+        "description": "Deposita R$ 100,00 na conta. Com saldo inicial de R$ 250,00, o saldo esperado passa a R$ 350,00."
+      }
+    },
+    {
+      "name": "6 - Sacar",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Saque permitido retorna 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Saldo retornado', function () { pm.expect(pm.response.json()).to.have.property('saldo'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"valor\": 75.50\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/contas/{{contaId}}/saques",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "contas",
+            "{{contaId}}",
+            "saques"
+          ]
+        },
+        "description": "Saca R$ 75,50. Apos saldo inicial de R$ 250,00 e deposito de R$ 100,00, o saldo final esperado e R$ 274,50. Para testar saldo insuficiente, altere o valor para 500.00 e espere HTTP 409."
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "pessoaId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "contaId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "tipoContaId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "cpfTeste",
+      "value": "55566677788",
+      "type": "string"
+    },
+    {
+      "key": "numeroConta",
+      "value": "200001-9",
+      "type": "string"
+    }
+  ]
+}

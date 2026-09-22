@@ -3,6 +3,7 @@ package bancohorizonte.org.service;
 import bancohorizonte.org.controller.dto.ClienteDtoRequest;
 import bancohorizonte.org.entity.Cliente;
 import bancohorizonte.org.exception.ClienteNaoEncontradoException;
+import bancohorizonte.org.exception.CpfJaCadastradoException;
 import bancohorizonte.org.repository.ClienteRepository;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,10 @@ public class ClienteService {
         novoCliente.setEmail(cliente.email());
         novoCliente.setCpf(cliente.cpf());
         return clienteRepository.save(novoCliente);
+    }
+
+    private boolean validaCpf(String cpf) {
+        return !clienteRepository.existsByCpf(cpf);
     }
 
 
